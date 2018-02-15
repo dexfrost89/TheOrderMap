@@ -13,6 +13,10 @@ public class mapmp : MonoBehaviour {
 
     const int MSIZE = 513;
 
+    public int get_manh(int x1, int y1, int x2, int y2)
+    {
+        return Mathf.Abs(x1 - x2) + Mathf.Abs(y1 - y2);
+    }
 
     public class Pair<T, U>
     {
@@ -90,6 +94,209 @@ public class mapmp : MonoBehaviour {
 
     public float[][][] closed, opened, not_touched, closed2;
 
+    public Double get_astar_cost(Vector2Int start, Vector2Int goal)
+    {
+
+        return getcost(start.x, start.y) + Mathf.Abs(start.x - goal.x) + Mathf.Abs(start.y - goal.y);
+    }
+
+    public float[][] closedas, openedas, ntouchedas;
+
+    public void astar(Vector2Int start, Vector2Int goal)
+    {
+        closedas = new float[MSIZE / 3 + 1][];
+        openedas = new float[MSIZE / 3 + 1][];
+        ntouchedas = new float[MSIZE / 3 + 1][];
+        for (int i = 0; i < MSIZE / 3; i++)
+        {
+            closedas[i] = new float[MSIZE / 3 + 1];
+            ntouchedas[i] = new float[MSIZE / 3 + 1];
+            openedas[i] = new float[MSIZE / 3 + 1];
+            for (int j = 0; j < MSIZE / 3; j++)
+            {
+                closedas[i][j] = -1;
+                ntouchedas[i][j] = 1;
+                openedas[i][j] = -1;
+            }
+        }
+        OrderedDictionary hieap = new OrderedDictionary();
+        Dictionary<Vector2Int, Vector2Int> pores = new Dictionary<Vector2Int, Vector2Int>();
+
+
+        int i1 = 0;
+        Vector2Int current = start;
+        current.x /= 3;
+        current.y /= 3;
+        Vector2Int startn = start;
+        startn.x /= 3;
+        startn.y /= 3;
+        Vector2Int ngoal = goal;
+        ngoal.x /= 3;
+        ngoal.y /= 3;
+        hieap.Add(0.0, new Vector4(startn.x, startn.y, startn.x, startn.y));
+        ntouchedas[startn.x][startn.y] = -1;
+        openedas[startn.x][startn.y] = 0;
+
+
+        while (current != ngoal)
+        {
+            i1++;
+            if(hieap.Count == 0)
+            {
+                i1 = MSIZE * MSIZE / 9 + 1;
+            }
+            if(i1 > MSIZE * MSIZE / 9)
+            {
+                break;
+            }
+            pores.Add(new Vector2Int((int)((Vector4)hieap[0]).x, (int)((Vector4)hieap[0]).y),
+                new Vector2Int((int)((Vector4)hieap[0]).z, (int)((Vector4)hieap[0]).w));
+            current = new Vector2Int((int)((Vector4)hieap[0]).x, (int)((Vector4)hieap[0]).y);
+            closedas[current.x][current.y] = openedas[current.x][current.y];
+            hieap.RemoveAt(0);
+            if (current == ngoal)
+            {
+                break;
+            }
+            if (current.x > 0)
+            {
+                if(highs.GetPixel(current.x * 3 - 3, current.y * 3).b >= 0.1 && 
+                    highs.GetPixel(current.x * 3 - 3, current.y * 3).b < 0.95f)
+                {
+
+                    if (ntouchedas[current.x - 1][current.y] == 1)
+                    {
+                        ntouchedas[current.x - 1][current.y] = -1;
+                        openedas[current.x - 1][current.y] = (float)closedas[current.x][current.y] + (float)getcost2(current.x - 1, current.y);
+                        hieap.Add(openedas[current.x - 1][current.y] + Mathf.Abs(current.x - 1 - ngoal.x) + Mathf.Abs(current.y - ngoal.y) +
+                            ((double)(current.x - 1)) / 204900 + ((double)current.y) / 20490000000,
+                            new Vector4(current.x - 1, current.y, current.x, current.y));
+                    }
+                    else if (closedas[current.x][current.y] + getcost(current.x - 1, current.y) < openedas[current.x - 1][current.y] && closedas[current.x - 1][current.y] == -1)
+                    {
+
+                        hieap.Remove(openedas[current.x - 1][current.y] + Mathf.Abs(current.x - 1 - ngoal.x) + Mathf.Abs(current.y - ngoal.y) +
+                            ((double)(current.x - 1)) / 204900 + ((double)current.y) / 20490000000);
+                        ntouchedas[current.x - 1][current.y] = -1;
+                        openedas[current.x - 1][current.y] = (float)closedas[current.x][current.y] + (float)getcost2(current.x - 1, current.y);
+                        hieap.Add(openedas[current.x - 1][current.y] + Mathf.Abs(current.x - 1 - ngoal.x) + Mathf.Abs(current.y - ngoal.y) +
+                            ((double)(current.x - 1)) / 204900 + ((double)current.y) / 20490000000,
+                            new Vector4(current.x - 1, current.y, current.x, current.y));
+                    }
+                }
+            }
+            if (current.x < MSIZE / 3 - 2)
+            {
+                if (highs.GetPixel(current.x * 3 + 3, current.y * 3).b >= 0.1 &&
+                    highs.GetPixel(current.x * 3 + 3, current.y * 3).b < 0.95f)
+                {
+                    if (ntouchedas[current.x + 1][current.y] == 1)
+                    {
+                        ntouchedas[current.x + 1][current.y] = -1;
+                        openedas[current.x + 1][current.y] = (float)closedas[current.x][current.y] + (float)getcost2(current.x + 1, current.y);
+                        hieap.Add(openedas[current.x + 1][current.y] + Mathf.Abs(current.x + 1 - ngoal.x) + Mathf.Abs(current.y - ngoal.y) +
+                            ((double)(current.x + 1)) / 204900 + ((double)current.y) / 20490000000,
+                            new Vector4(current.x + 1, current.y, current.x, current.y));
+                    }
+                    else if (closedas[current.x][current.y] + getcost(current.x + 1, current.y) < openedas[current.x + 1][current.y] && closedas[current.x + 1][current.y] == -1)
+                    {
+
+                        hieap.Remove(openedas[current.x + 1][current.y] + Mathf.Abs(current.x + 1 - ngoal.x) + Mathf.Abs(current.y - ngoal.y) +
+                            ((double)(current.x + 1)) / 204900 + ((double)current.y) / 20490000000);
+                        ntouchedas[current.x + 1][current.y] = -1;
+                        openedas[current.x + 1][current.y] = (float)closedas[current.x][current.y] + (float)getcost2(current.x + 1, current.y);
+                        hieap.Add(openedas[current.x + 1][current.y] + Mathf.Abs(current.x + 1 - ngoal.x) + Mathf.Abs(current.y - ngoal.y) +
+                            ((double)(current.x + 1)) / 204900 + ((double)current.y) / 20490000000,
+                            new Vector4(current.x + 1, current.y, current.x, current.y));
+                    }
+                }
+            }
+
+            if (current.y > 0)
+            {
+                if (highs.GetPixel(current.x * 3, current.y * 3 - 3).b >= 0.1 &&
+                    highs.GetPixel(current.x * 3, current.y * 3 - 3).b < 0.95f)
+                {
+                    if (ntouchedas[current.x][current.y - 1] == 1)
+                    {
+                        ntouchedas[current.x][current.y - 1] = -1;
+                        openedas[current.x][current.y - 1] = (float)closedas[current.x][current.y] + (float)getcost2(current.x, current.y - 1);
+                        hieap.Add(openedas[current.x][current.y - 1] + Mathf.Abs(current.x - ngoal.x) + Mathf.Abs(current.y - 1 - ngoal.y) +
+                            ((double)(current.x)) / 204900 + ((double)current.y - 1) / 20490000000,
+                            new Vector4(current.x, current.y - 1, current.x, current.y));
+                    }
+                    else if (closedas[current.x][current.y] + getcost(current.x, current.y - 1) < openedas[current.x][current.y - 1] && closedas[current.x][current.y - 1] == -1)
+                    {
+
+                        hieap.Remove(openedas[current.x][current.y - 1] + Mathf.Abs(current.x - ngoal.x) + Mathf.Abs(current.y - 1 - ngoal.y) +
+                            ((double)(current.x)) / 204900 + ((double)current.y - 1) / 20490000000);
+                        ntouchedas[current.x][current.y - 1] = -1;
+                        openedas[current.x][current.y - 1] = (float)closedas[current.x][current.y] + (float)getcost2(current.x, current.y - 1);
+                        hieap.Add(openedas[current.x][current.y - 1] + Mathf.Abs(current.x - ngoal.x) + Mathf.Abs(current.y - 1 - ngoal.y) +
+                            ((double)(current.x)) / 204900 + ((double)current.y - 1) / 20490000000,
+                            new Vector4(current.x, current.y - 1, current.x, current.y));
+                    }
+                }
+            }
+            if (current.y < MSIZE / 3 - 2)
+            {
+                if (highs.GetPixel(current.x * 3, current.y * 3 + 3).b >= 0.1 &&
+                    highs.GetPixel(current.x * 3, current.y * 3 + 3).b < 0.95f)
+                {
+                    if (ntouchedas[current.x][current.y + 1] == 1)
+                    {
+                        ntouchedas[current.x][current.y + 1] = -1;
+                        openedas[current.x][current.y + 1] = (float)closedas[current.x][current.y] + (float)getcost2(current.x, current.y + 1);
+                        hieap.Add(openedas[current.x][current.y + 1] + Mathf.Abs(current.x - ngoal.x) + Mathf.Abs(current.y + 1 - ngoal.y) +
+                            ((double)(current.x)) / 204900 + ((double)current.y + 1) / 20490000000,
+                            new Vector4(current.x, current.y + 1, current.x, current.y));
+                    }
+                    else if (closedas[current.x][current.y] + getcost(current.x, current.y + 1) < openedas[current.x][current.y + 1] && closedas[current.x][current.y + 1] == -1)
+                    {
+
+                        hieap.Remove(openedas[current.x][current.y + 1] + Mathf.Abs(current.x - ngoal.x) + Mathf.Abs(current.y + 1 - ngoal.y) +
+                            ((double)(current.x)) / 204900 + ((double)current.y + 1) / 20490000000);
+                        ntouchedas[current.x][current.y + 1] = -1;
+                        openedas[current.x][current.y + 1] = (float)closedas[current.x][current.y] + (float)getcost2(current.x, current.y + 1);
+                        hieap.Add(openedas[current.x][current.y + 1] + Mathf.Abs(current.x - ngoal.x) + Mathf.Abs(current.y + 1 - ngoal.y) +
+                            ((double)(current.x)) / 204900 + ((double)current.y + 1) / 20490000000,
+                            new Vector4(current.x, current.y + 1, current.x, current.y));
+                    }
+                }
+            }
+
+
+        }
+        current = ngoal;
+        Vector2Int precur;
+        while(current != pores[current])
+        {
+            if (i1 > MSIZE * MSIZE / 9)
+            {
+                break;
+            }
+            for (int i = 0; i < 3; i++)
+                for (int j = 0; j < 3; j++)
+                {
+            //        mapm.SetPixel(current.x * 3 + i, current.y * 3 + j, Color.red);
+                }
+            precur = current;
+            current = pores[current];
+            current = pores[current];
+            current = pores[current];
+            current = pores[current];
+            current = pores[current];
+            current = pores[current];
+            current = pores[current];
+            current = pores[current];
+            dsq2d2(current * 3, precur * 3, 0.2f, current * 3, precur * 3);
+        }
+
+        List<Vector2Int> res = new List<Vector2Int>();
+
+        
+    }
+
     public void kmeans()
     {
         pr12vs = new Texture2D(MSIZE, MSIZE);
@@ -119,7 +326,8 @@ public class mapmp : MonoBehaviour {
             }
         }
         pr12vs.Apply();
-        proooooovs.GetComponent<Image>().sprite = Sprite.Create(pr12vs, new Rect(0, 0, MSIZE, MSIZE), new Vector2(0.5f, 0.5f));
+        highs.Apply();
+        proooooovs.GetComponent<Image>().sprite = Sprite.Create(highs, new Rect(0, 0, MSIZE, MSIZE), new Vector2(0.5f, 0.5f));
     }
 
     public bool fl;
@@ -130,8 +338,11 @@ public class mapmp : MonoBehaviour {
         {
             return 0;
         }
-        if((Vector4)mapm.GetPixel(x, y) == (Vector4)Color.blue)
+        if(highs.GetPixel(x, y).b < 0.1)
                         {
+            return 1000;
+        } else if((Vector4)mapm.GetPixel(x, y) == (Vector4)Color.blue)
+        {
             return RIVER;
         }
                         else if ((Vector4)mapm.GetPixel(x, y) == (Vector4)Color.red || (Vector4)mapm.GetPixel(x, y) == (Vector4)Color.black)
@@ -139,25 +350,25 @@ public class mapmp : MonoBehaviour {
 
             return ROAD;
         }
-        else if ((Vector4)mapm.GetPixel(x, y) == (Vector4)Color.yellow)
+        else if (highs.GetPixel(x, y).b < 0.2)
         {
 
-            return SAND;
+            return SAND  + (GRASS - SAND) / 0.1 * (highs.GetPixel(x, y).b - 0.1);
         }
-        else if ((Vector4)mapm.GetPixel(x, y) == (Vector4)Color.green)
+        else if (highs.GetPixel(x, y).b < 0.7)
         {
 
-            return GRASS;
+            return GRASS  + (STONE - GRASS) / 0.5 * (highs.GetPixel(x, y).b - 0.2);
         }
-        else if ((Vector4)mapm.GetPixel(x, y) == (Vector4)Color.gray)
+        else if (highs.GetPixel(x, y).b < 0.95)
         {
 
-            return STONE;
+            return STONE * (1 + (highs.GetPixel(x, y).b - 0.7) / 2.5);
         }
         else
         {
 
-            return STONE;
+            return 1000;
         }
     }
 
@@ -637,21 +848,45 @@ public class mapmp : MonoBehaviour {
 
     }
 
-
+    public Texture2D highs;
     public Vector3[] provs;
     public int seed = 0;
+    public List<int> seeeeds;
 
     public void genseed()
     {
-        seed = UnityEngine.Random.Range(0, 1000000000);
+        if (seeeeds.Count == 0)
+        {
+            seeeeds = get_list_sids();
+        }
+        seed = seeeeds[0];
+        seeeeds.RemoveAt(0);
+        if(seeeeds.Count == 0)
+        {
+            seeeeds = get_list_sids();
+        }
+    }
+
+
+
+    public List<int> get_list_sids()
+    {
+        List<int> res = new List<int>();
+        for(int i = 0; i < 100000; i++)
+        {
+            res.Add(UnityEngine.Random.Range(0, 1000000000));
+        }
+        return res;
     }
 
     public int nn1, nn2, i1, i2;
     public int[][] incomes, outcomes;
+    List<float> holp = new List<float>();
 
     public void generate2()
     {
         mapm = new Texture2D(MSIZE, MSIZE);
+        highs = new Texture2D(MSIZE, MSIZE);
         UnityEngine.Random.InitState(seed);
         mapm = new Texture2D(MSIZE, MSIZE);
         //  mapm = Texture2D.blackTexture;
@@ -779,7 +1014,16 @@ public class mapmp : MonoBehaviour {
 
 
 
+        for(int i = 0; i < MSIZE; i++)
+        {
+            for(int j = 0; j < MSIZE; j++)
+            {
+                highs.SetPixel(i, j, mapm.GetPixel(i, j));
+                holp.Add(mapm.GetPixel(i, j).b);
+            }
+        }
 
+        holp.Sort();
 
 
         for (int i = 0; i < MSIZE; i++)
@@ -797,7 +1041,7 @@ public class mapmp : MonoBehaviour {
                 else if (mapm.GetPixel(i, j).b < 0.7)
                 {
                 }
-                else if (mapm.GetPixel(i, j).b < 0.95)
+                else if (mapm.GetPixel(i, j).b < 0.95f)
                 {
                 }
                 else
@@ -827,17 +1071,21 @@ public class mapmp : MonoBehaviour {
                     i1++;
                     //Debug.Log(i.ToString() + " " + j.ToString() + " blue");
                     mapm.SetPixel(i, j, Color.blue);// + new Color(0.5f, 0.5f, 0.5f, 1f));
+                    //highs.SetPixel(i, j, new Color(0f, 0f, 0f));
                 } else if(mapm.GetPixel(i, j).b < 0.2)
                 {
                     mapm.SetPixel(i, j, Color.yellow);
+                    //highs.SetPixel(i, j, new Color(0.33f, 0.33f, 0.33f));
                 }
                 else if (mapm.GetPixel(i, j).b < 0.7)
                 {
                     mapm.SetPixel(i, j, Color.green);
+                    //highs.SetPixel(i, j, new Color(0.66f, 0.66f, 0.66f));
                 }
-                else if (mapm.GetPixel(i, j).b < 0.95)
+                else if (mapm.GetPixel(i, j).b < 0.95f)
                 {
                     mapm.SetPixel(i, j, Color.grey);
+                    //highs.SetPixel(i, j, new Color(0.83f, 0.83f, 0.83f));
                 }
                 else
                 {
@@ -848,7 +1096,8 @@ public class mapmp : MonoBehaviour {
                     i2++;
                     //  Debug.Log(i.ToString() + " " + j.ToString() + " white");
                     mapm.SetPixel(i, j, Color.white);
-                   // mapm.SetPixel(i, j, Color.grey);
+                    //highs.SetPixel(i, j, new Color(1f, 1f, 1f));
+                    // mapm.SetPixel(i, j, Color.grey);
                 }
                 //mapm.SetPixel(i, j, new Color((float)0.0, (float)0.0, (float)0.0, (float)1.0));
             }
@@ -1015,11 +1264,12 @@ public class mapmp : MonoBehaviour {
                 int x2 = UnityEngine.Random.Range(0, MSIZE - 100);
                 cities1[i] = x1;
                 cities2[i] = x2;
-                for (int j = -100; j <= 100 && fl; j++)
+                for (int j = 0; j < 10 && fl; j++)
                 {
-                    for (int l = -100; l <= 100 && fl; l++)
+                    for (int l = 0; l < 10 && fl; l++)
                     {
-                        if(mapm.GetPixel(x1 + j, x2 + l) == Color.blue + new Color(0.5f, 0.5f, 0.5f, 1f) || mapm.GetPixel(x1 + j, x2 + l) == Color.black)
+                        if(mapm.GetPixel(x1 + j, x2 + l) == Color.blue || mapm.GetPixel(x1 + j, x2 + l) == Color.black ||
+                            mapm.GetPixel(x1 + j, x2 + l) == Color.white)
                         {
                             fl = false;
                             break;
@@ -1042,8 +1292,9 @@ public class mapmp : MonoBehaviour {
             }
             if(i > 0)
             {
-                dsq2d2(new Vector2(cities1[i], cities2[i]), new Vector2(cities1[i - 1], cities2[i - 1]), 0.2f, new Vector2(cities1[i], cities2[i]),
-                    new Vector2(cities1[i - 1], cities2[i - 1]));
+                astar(new Vector2Int(cities1[i], cities2[i]), new Vector2Int(cities1[i - 1], cities2[i - 1]));
+               // dsq2d2(new Vector2(cities1[i], cities2[i]), new Vector2(cities1[i - 1], cities2[i - 1]), 0.2f, new Vector2(cities1[i], cities2[i]),
+                 //   new Vector2(cities1[i - 1], cities2[i - 1]));
             }
 
         }
@@ -1152,6 +1403,7 @@ public class mapmp : MonoBehaviour {
     // Use this for initialization
     void Start()
     {
+        seeeeds = get_list_sids();
         fl = true;
         int i;
         List<Chunk> chuks = gameObject.GetComponent<StaticData>().chunks.list;
